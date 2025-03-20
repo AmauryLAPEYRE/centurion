@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer, ReferenceLine, ReferenceArea, Brush
+  Legend, ResponsiveContainer, ReferenceLine
 } from 'recharts';
-import { Card, CardTitle, Button, FlexRow } from './StyledComponents';
+import { Card, CardTitle, FlexRow } from './StyledComponents';
 import { formatCurrency, formatDate, formatPercent } from '../utils/calculationUtils';
 import { getStockColor } from '../utils/theme';
-import { FaChartArea, FaChartLine, FaSearch, FaCalendarAlt, FaPlus, FaMinus } from 'react-icons/fa';
+import { FaChartArea, FaChartLine, FaBell } from 'react-icons/fa';
 import StockIcon from './StockIcon';
 import styled from 'styled-components';
 import { theme } from '../utils/theme';
@@ -16,7 +16,7 @@ import InfoTooltip from './Tooltip';
 const ChartContainer = styled.div`
   position: relative;
   width: 100%;
-  height: ${props => props.expanded ? '500px' : '400px'};
+  height: 400px;
   transition: height 0.3s ease;
 `;
 
@@ -27,14 +27,19 @@ const EventMarker = styled.div`
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background-color: ${props => 
-    props.severity === 'major' ? theme.danger : 
-    props.severity === 'medium' ? theme.warning : 
-    theme.info};
+  background-color: ${theme.primary};
   border: 2px solid white;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
   z-index: 10;
   cursor: pointer;
+  
+  /* Animation de pulsation pour attirer l'attention */
+  animation: pulse 2s infinite;
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+  }
 `;
 
 const EventTooltip = styled.div`
@@ -76,42 +81,37 @@ const ControlsContainer = styled.div`
 const ControlGroup = styled.div`
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 `;
 
-const ChartTypeButton = styled(Button)`
-  padding: 8px 12px;
+const ChartTypeButton = styled.button`
+  padding: 8px 16px;
   font-size: 0.9rem;
-`;
-
-const ZoomControls = styled.div`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  z-index: 5;
-`;
-
-const ZoomButton = styled.button`
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-color: white;
-  border: 1px solid ${theme.gray};
-  color: ${theme.darkGray};
+  background-color: ${props => props.active ? theme.primary : 'white'};
+  color: ${props => props.active ? 'white' : theme.darkGray};
+  border: 1px solid ${props => props.active ? theme.primary : theme.gray};
+  border-radius: ${theme.radius.md};
+  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: ${theme.shadows.sm};
-  transition: ${theme.transitions.fast};
+  gap: 6px;
+  transition: all 0.2s ease;
   
   &:hover {
-    background-color: ${theme.light};
-    transform: scale(1.1);
+    background-color: ${props => props.active ? theme.primary : theme.light};
+    transform: translateY(-2px);
   }
 `;
+
+const formatYAxisTick = (value) => {
+  if (value >= 1000000) {
+    return `${(value / 1000000).toFixed(1)}M €`;
+  } else if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}k €`;
+  } else {
+    return `${value} €`;
+  }
+};
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -151,11 +151,7 @@ const CustomTooltip = ({ active, payload, label }) => {
             backgroundColor: 'rgba(0, 0, 0, 0.05)',
             borderRadius: '4px'
           }}>
-            <span style={{ fontWeight: 'bold', color: 
-              payload[0].payload.eventSeverity === 'major' ? theme.danger : 
-              payload[0].payload.eventSeverity === 'medium' ? theme.warning : 
-              theme.primary 
-            }}>
+            <span style={{ fontWeight: 'bold', color: theme.primary }}>
               📊 {payload[0].payload.event}
             </span>
           </div>
@@ -168,17 +164,24 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const marketCrashes = [
-  { date: '2008-09-15', name: 'Crise financière de 2008', description: 'Faillite de Lehman Brothers' },
-  { date: '2020-03-16', name: 'Krach lié au COVID-19', description: 'Chute brutale des marchés suite aux mesures de confinement' },
-  { date: '2022-01-24', name: 'Correction de 2022', description: 'Forte correction des marchés liée à l\'inflation et aux tensions géopolitiques' }
+  { date: '2008-09-15', name: 'Crise financière de 2008', description: 'Faillite de Lehman Brothers', severity: 'major' },
+  { date: '2010-05-06', name: 'Flash Crash', description: 'Chute soudaine et reprise des marchés', severity: 'medium' },
+  { date: '2011-08-05', name: 'Dégradation de la note de crédit US', description: 'Standard & Poor\'s dégrade la note des États-Unis', severity: 'medium' },
+  { date: '2015-08-24', name: 'Lundi noir chinois', description: 'Forte baisse des marchés suite au ralentissement chinois', severity: 'medium' },
+  { date: '2016-06-24', name: 'Brexit', description: 'Résultat du référendum britannique sur la sortie de l\'UE', severity: 'medium' },
+  { date: '2018-12-24', name: 'Correction du marché', description: 'Forte baisse des marchés fin 2018', severity: 'medium' },
+  { date: '2020-03-16', name: 'Krach lié au COVID-19', description: 'Chute brutale des marchés suite aux mesures de confinement', severity: 'major' },
+  { date: '2022-01-24', name: 'Correction de 2022', description: 'Forte correction des marchés liée à l\'inflation et aux tensions géopolitiques', severity: 'medium' }
 ];
 
 const PerformanceChart = ({ performanceData, selectedStocks }) => {
   const [chartType, setChartType] = useState('area');
   const [displayDividends, setDisplayDividends] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [zoomDomain, setZoomDomain] = useState(null);
+  const [showEvents, setShowEvents] = useState(true);
   const [hoveredEvent, setHoveredEvent] = useState(null);
+  const chartRef = React.useRef(null);
+  const [chartDimensions, setChartDimensions] = useState({ width: 0, height: 0 });
+  const [eventPositions, setEventPositions] = useState([]);
   
   // Transformer les données pour le graphique
   const chartData = performanceData.length > 0 ? performanceData[0].map((item, index) => {
@@ -205,61 +208,102 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
     return dataPoint;
   }) : [];
   
-  // Fonction pour zoomer sur une période
-  const handleZoom = (type) => {
-    if (chartData.length === 0) return;
-    
-    const lastDate = new Date(chartData[chartData.length - 1].date);
-    let startDate;
-    
-    switch (type) {
-      case 'all':
-        setZoomDomain(null);
-        break;
-      case '1y':
-        startDate = new Date(lastDate);
-        startDate.setFullYear(lastDate.getFullYear() - 1);
-        setZoomDomain([startDate.toISOString().split('T')[0], lastDate.toISOString().split('T')[0]]);
-        break;
-      case '3y':
-        startDate = new Date(lastDate);
-        startDate.setFullYear(lastDate.getFullYear() - 3);
-        setZoomDomain([startDate.toISOString().split('T')[0], lastDate.toISOString().split('T')[0]]);
-        break;
-      case '5y':
-        startDate = new Date(lastDate);
-        startDate.setFullYear(lastDate.getFullYear() - 5);
-        setZoomDomain([startDate.toISOString().split('T')[0], lastDate.toISOString().split('T')[0]]);
-        break;
-      default:
-        setZoomDomain(null);
+  // Déterminer les dimensions du graphique après montage
+  useEffect(() => {
+    if (chartRef.current) {
+      const updateDimensions = () => {
+        const chartElem = chartRef.current;
+        if (chartElem) {
+          const { width, height } = chartElem.getBoundingClientRect();
+          setChartDimensions({ width, height });
+        }
+      };
+      
+      updateDimensions();
+      window.addEventListener('resize', updateDimensions);
+      
+      return () => {
+        window.removeEventListener('resize', updateDimensions);
+      };
     }
-  };
+  }, [chartRef.current, performanceData]);
   
-  // Fonction pour trouver les coordonnées des événements sur le graphique
-  const getEventCoordinates = () => {
-    if (!chartData.length) return [];
+  // Calculer les positions des événements une fois que nous avons les dimensions
+  useEffect(() => {
+    if (chartDimensions.width > 0 && chartDimensions.height > 0 && chartData.length > 0) {
+      calculateEventPositions();
+    }
+  }, [chartDimensions, chartData, showEvents]);
+  
+  // Fonction pour calculer les positions des événements
+  const calculateEventPositions = () => {
+    if (!chartRef.current || chartData.length === 0) return;
     
-    const events = [];
-    chartData.forEach((dataPoint, index) => {
-      if (dataPoint.event) {
-        // Estimer la position sur le graphique (cette logique devrait être ajustée selon la taille du graphique)
-        const xPos = (index / (chartData.length - 1)) * 100; // En pourcentage de la largeur
-        events.push({
-          date: dataPoint.date,
-          event: dataPoint.event,
-          severity: dataPoint.eventSeverity,
-          x: xPos,
-          y: 50, // Position verticale arbitraire
-          dataPoint
-        });
-      }
+    const { width, height } = chartDimensions;
+    const chartStart = new Date(chartData[0].date);
+    const chartEnd = new Date(chartData[chartData.length - 1].date);
+    const timeRange = chartEnd.getTime() - chartStart.getTime();
+    
+    // Calculer la position verticale en fonction de la valeur du portefeuille
+    const yValues = chartData.map(dataPoint => {
+      let maxValue = 0;
+      selectedStocks.forEach(stock => {
+        if (dataPoint[stock.symbol] > maxValue) {
+          maxValue = dataPoint[stock.symbol];
+        }
+      });
+      return maxValue;
     });
     
-    return events;
+    const maxYValue = Math.max(...yValues);
+    
+    // Calculer les positions pour les événements du marché
+    const positions = marketCrashes
+      .filter(crash => {
+        const crashDate = new Date(crash.date);
+        return crashDate >= chartStart && crashDate <= chartEnd;
+      })
+      .map(crash => {
+        const crashDate = new Date(crash.date);
+        const timePosition = (crashDate.getTime() - chartStart.getTime()) / timeRange;
+        let xPos = Math.max(10, Math.min(width - 10, timePosition * width));
+        
+        // Trouver la date la plus proche dans les données
+        let closestIndex = 0;
+        let smallestDiff = Number.MAX_VALUE;
+        
+        chartData.forEach((dataPoint, index) => {
+          const dataDate = new Date(dataPoint.date);
+          const diff = Math.abs(dataDate.getTime() - crashDate.getTime());
+          if (diff < smallestDiff) {
+            smallestDiff = diff;
+            closestIndex = index;
+          }
+        });
+        
+        // Obtenir la valeur Y à cette date
+        let yValue = 0;
+        if (closestIndex >= 0 && closestIndex < chartData.length) {
+          selectedStocks.forEach(stock => {
+            if (chartData[closestIndex][stock.symbol] > yValue) {
+              yValue = chartData[closestIndex][stock.symbol];
+            }
+          });
+        }
+        
+        // Calculer la position Y proportionnelle, en gardant une marge
+        const yPosition = Math.max(20, Math.min(height - 20, (1 - yValue / maxYValue) * height));
+        
+        return {
+          ...crash,
+          x: xPos,
+          y: yPosition,
+          value: yValue
+        };
+      });
+    
+    setEventPositions(positions);
   };
-  
-  const eventCoordinates = getEventCoordinates();
   
   // Déterminer le domaine Y pour un meilleur affichage
   const getYDomain = () => {
@@ -302,25 +346,21 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
           >
             Dividendes
           </ChartTypeButton>
-        </ControlGroup>
-        
-        <ControlGroup>
-          <ChartTypeButton onClick={() => handleZoom('all')}>Tout</ChartTypeButton>
-          <ChartTypeButton onClick={() => handleZoom('5y')}>5 ans</ChartTypeButton>
-          <ChartTypeButton onClick={() => handleZoom('3y')}>3 ans</ChartTypeButton>
-          <ChartTypeButton onClick={() => handleZoom('1y')}>1 an</ChartTypeButton>
-          <ChartTypeButton onClick={() => setExpanded(!expanded)}>
-            {expanded ? 'Réduire' : 'Agrandir'}
+          <ChartTypeButton 
+            onClick={() => setShowEvents(!showEvents)}
+            active={showEvents}
+          >
+            <FaBell /> Événements
           </ChartTypeButton>
         </ControlGroup>
       </ControlsContainer>
       
-      <ChartContainer expanded={expanded}>
+      <ChartContainer ref={chartRef}>
         <ResponsiveContainer>
           {chartType === 'area' ? (
             <AreaChart
               data={chartData}
-              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+              margin={{ top: 20, right: 20, left: 0, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
               <XAxis 
@@ -330,10 +370,9 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
                   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                 }}
                 stroke="#6c757d"
-                domain={zoomDomain || ['dataMin', 'dataMax']}
               />
               <YAxis 
-                tickFormatter={value => formatCurrency(value)}
+                tickFormatter={formatYAxisTick}
                 stroke="#6c757d"
                 domain={getYDomain()}
               />
@@ -370,40 +409,11 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
                   strokeWidth={2}
                 />
               ))}
-              
-              {/* Ajouter des repères pour les événements majeurs */}
-              {marketCrashes.map((crash, index) => (
-                <ReferenceLine 
-                  key={index}
-                  x={crash.date}
-                  stroke={theme.danger}
-                  strokeDasharray="3 3"
-                  label={{
-                    value: crash.name,
-                    position: 'insideTopRight',
-                    fill: theme.danger,
-                    fontSize: 12
-                  }}
-                />
-              ))}
-              
-              {/* Brosse pour le zoom interactif */}
-              {expanded && (
-                <Brush 
-                  dataKey="date" 
-                  height={30} 
-                  stroke={theme.primary}
-                  tickFormatter={value => {
-                    const date = new Date(value);
-                    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                  }}
-                />
-              )}
             </AreaChart>
           ) : (
             <LineChart
               data={chartData}
-              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+              margin={{ top: 20, right: 20, left: 0, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
               <XAxis 
@@ -413,10 +423,9 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
                   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                 }}
                 stroke="#6c757d"
-                domain={zoomDomain || ['dataMin', 'dataMax']}
               />
               <YAxis 
-                tickFormatter={value => formatCurrency(value)}
+                tickFormatter={formatYAxisTick}
                 stroke="#6c757d"
                 domain={getYDomain()}
               />
@@ -453,46 +462,16 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
                   strokeWidth={2}
                 />
               ))}
-              
-              {/* Ajouter des repères pour les événements majeurs */}
-              {marketCrashes.map((crash, index) => (
-                <ReferenceLine 
-                  key={index}
-                  x={crash.date}
-                  stroke={theme.danger}
-                  strokeDasharray="3 3"
-                  label={{
-                    value: crash.name,
-                    position: 'insideTopRight',
-                    fill: theme.danger,
-                    fontSize: 12
-                  }}
-                />
-              ))}
-              
-              {/* Brosse pour le zoom interactif */}
-              {expanded && (
-                <Brush 
-                  dataKey="date" 
-                  height={30} 
-                  stroke={theme.primary}
-                  tickFormatter={value => {
-                    const date = new Date(value);
-                    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                  }}
-                />
-              )}
             </LineChart>
           )}
         </ResponsiveContainer>
         
-        {/* Marqueurs d'événements */}
-        {eventCoordinates.map((eventData, index) => (
+        {/* Marqueurs d'événements interactifs */}
+        {showEvents && eventPositions.map((eventData, index) => (
           <React.Fragment key={`event-${index}`}>
             <EventMarker 
-              left={`${eventData.x}%`}
-              top={eventData.y}
-              severity={eventData.severity}
+              left={eventData.x}
+              top={eventData.y} 
               onMouseEnter={() => setHoveredEvent(eventData)}
               onMouseLeave={() => setHoveredEvent(null)}
             />
@@ -500,28 +479,20 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
             {hoveredEvent && hoveredEvent.date === eventData.date && (
               <EventTooltip
                 show={true}
-                left={`${eventData.x}%`}
+                left={eventData.x}
                 top={eventData.y}
               >
-                <strong>{eventData.event}</strong>
+                <strong>{eventData.name}</strong>
                 <div>{formatDate(eventData.date)}</div>
+                {eventData.description && (
+                  <div style={{ marginTop: 5, fontSize: '0.8rem', opacity: 0.9 }}>
+                    {eventData.description}
+                  </div>
+                )}
               </EventTooltip>
             )}
           </React.Fragment>
         ))}
-        
-        {/* Contrôles de zoom */}
-        <ZoomControls>
-          <ZoomButton onClick={() => setExpanded(true)}>
-            <FaSearch />
-          </ZoomButton>
-          <ZoomButton onClick={() => setZoomDomain(null)}>
-            <FaCalendarAlt />
-          </ZoomButton>
-          <ZoomButton onClick={() => handleZoom('1y')}>
-            1Y
-          </ZoomButton>
-        </ZoomControls>
       </ChartContainer>
     </Card>
   );
