@@ -1,70 +1,101 @@
-# Getting Started with Create React App
+Description
+Centurion est un simulateur d'investissement par Dollar-Cost Averaging (DCA) qui vous permet de visualiser comment vos investissements réguliers sur les marchés financiers auraient performé dans le temps. Découvrez l'impact des investissements mensuels sur différentes actions depuis une date spécifique jusqu'à aujourd'hui.
+Fonctionnalités
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+🔍 Recherchez n'importe quelle action cotée en bourse
+📊 Visualisez la performance d'un investissement régulier mensuel (DCA)
+📅 Choisissez une date de début personnalisée pour chaque investissement
+💰 Définissez votre montant d'investissement mensuel
+📈 Analysez les résultats avec des graphiques et tableaux détaillés
+💼 Ajoutez plusieurs actions pour comparer différentes stratégies
 
-## Available Scripts
+Technologies utilisées
 
-In the project directory, you can run:
+React.js
+styled-components pour les styles
+recharts pour les visualisations de données
+date-fns pour la manipulation des dates
+axios pour les requêtes API
+Financial Modeling Prep API pour les données financières
 
-### `npm start`
+Installation
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Clonez le dépôt :
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+bashCopiergit clone https://github.com/votre-utilisateur/centurion.git
+cd centurion
 
-### `npm test`
+Installez les dépendances :
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+bashCopiernpm install
 
-### `npm run build`
+Créez un fichier .env à la racine du projet et ajoutez votre clé API :
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+CopierREACT_APP_FMP_API_KEY=votre_clé_api
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Lancez l'application en mode développement :
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+bashCopiernpm start
+L'application sera disponible à l'adresse http://localhost:3000.
+Configuration de l'API
+Centurion utilise l'API Financial Modeling Prep pour obtenir les données historiques des actions. Pour utiliser l'application, vous devez :
 
-### `npm run eject`
+Créer un compte sur Financial Modeling Prep
+Obtenir une clé API gratuite (permet 250 requêtes par jour)
+Configurer la clé dans le fichier .env comme indiqué ci-dessus
+Alternative : modifiez directement la constante API_KEY dans src/services/apiService.js
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Guide d'utilisation
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Recherchez une action : Utilisez la barre de recherche pour trouver une action par son nom ou son symbole (ex : Apple, AAPL)
+Sélectionnez une date de début : Choisissez quand vous auriez commencé à investir
+Définissez votre investissement mensuel : Indiquez combien vous auriez investi chaque mois (par défaut 100€)
+Ajoutez d'autres actions (optionnel) : Répétez les étapes 1-3 pour ajouter d'autres actions à comparer
+Calculez la performance : Cliquez sur le bouton pour lancer le calcul et visualiser les résultats
+Analysez les résultats : Explorez les graphiques et tableaux détaillant votre performance sur la période
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Structure du projet
+Copiercenturion/
+├── public/
+│   ├── favicon.ico
+│   └── index.html
+├── src/
+│   ├── assets/
+│   ├── components/
+│   │   ├── Onboarding.js
+│   │   ├── PerformanceChart.js
+│   │   ├── PerformanceDetails.js
+│   │   ├── PerformanceSummary.js
+│   │   ├── PerformanceTable.js
+│   │   ├── StockForm.js
+│   │   ├── StockIcon.js
+│   │   ├── StockSearch.js
+│   │   └── StyledComponents.js
+│   ├── services/
+│   │   └── apiService.js
+│   ├── utils/
+│   │   ├── calculationUtils.js
+│   │   └── theme.js
+│   ├── App.js
+│   └── index.js
+└── package.json
+Captures d'écran
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Interface principale : Une interface intuitive avec guides utilisateur
+Recherche d'actions : Résultats de recherche avec indication des cotations principales
+Visualisation de performance : Graphiques et tableaux détaillés
+Analyse comparative : Comparaison de différentes actions
 
-## Learn More
+Limitations
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+L'API gratuite de Financial Modeling Prep est limitée à 250 requêtes par jour
+Les calculs ne prennent pas en compte les taxes, commissions et dividendes réinvestis
+Les données historiques peuvent légèrement différer selon les sources
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Développement
+Pour contribuer au projet :
 
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Créez une branche pour votre fonctionnalité (git checkout -b feature/amazing-feature)
+Committez vos changements (git commit -m 'Add some amazing feature')
+Poussez la branche (git push origin feature/amazing-feature)
+Ouvrez une Pull Request
