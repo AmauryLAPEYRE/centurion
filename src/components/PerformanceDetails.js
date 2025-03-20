@@ -9,15 +9,47 @@ import {
 import PerformanceTable from './PerformanceTable';
 import { FaTable } from 'react-icons/fa';
 import StockIcon from './StockIcon';
+import styled from 'styled-components';
+import { theme } from '../utils/theme';
+
+const FullWidthCard = styled(Card)`
+  width: 100%;
+  overflow: visible;
+`;
+
+const DetailsTabs = styled(TabsList)`
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: ${theme.light};
+    border-radius: 10px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: ${theme.gray};
+    border-radius: 10px;
+  }
+`;
+
+const ScrollableContainer = styled.div`
+  width: 100%;
+  overflow-x: auto;
+`;
 
 const PerformanceDetails = ({ performanceData, selectedStocks }) => {
   const [activeStockIndex, setActiveStockIndex] = useState(0);
   
   return (
-    <Card>
+    <FullWidthCard>
       <CardTitle><FaTable /> Détails des investissements</CardTitle>
       <TabsContainer>
-        <TabsList>
+        <DetailsTabs>
           {selectedStocks.map((stock, index) => (
             <Tab 
               key={index}
@@ -32,15 +64,17 @@ const PerformanceDetails = ({ performanceData, selectedStocks }) => {
               {stock.symbol}
             </Tab>
           ))}
-        </TabsList>
+        </DetailsTabs>
         
-        <PerformanceTable 
-          performanceData={performanceData}
-          selectedStocks={selectedStocks}
-          activeStockIndex={activeStockIndex}
-        />
+        <ScrollableContainer>
+          <PerformanceTable 
+            performanceData={performanceData}
+            selectedStocks={selectedStocks}
+            activeStockIndex={activeStockIndex}
+          />
+        </ScrollableContainer>
       </TabsContainer>
-    </Card>
+    </FullWidthCard>
   );
 };
 
