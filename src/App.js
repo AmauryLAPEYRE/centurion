@@ -4,12 +4,7 @@ import {
   Header,
   Title,
   Subtitle,
-  ResultsContainer,
   LoadingSpinner,
-  ContentContainer,
-  Grid,
-  GridItem,
-  ProgressiveContainer,
   Card
 } from './components/StyledComponents';
 import StockSearch from './components/StockSearch';
@@ -21,7 +16,7 @@ import Onboarding from './components/Onboarding';
 import TabNavigation from './components/TabNavigation';
 import { getMonthlyStockData, preloadPopularStocks } from './services/apiService';
 import { calculateDCAPerformance } from './utils/calculationUtils';
-import { FaDollarSign, FaSpinner, FaLightbulb, FaBook, FaChartBar } from 'react-icons/fa';
+import { FaDollarSign, FaChartBar } from 'react-icons/fa';
 import styled from 'styled-components';
 import { theme } from './utils/theme';
 import Tooltip from './components/Tooltip';
@@ -31,17 +26,14 @@ const Education = lazy(() => import('./components/Education'));
 const ComparisonComponent = lazy(() => import('./components/Comparison'));
 const Help = lazy(() => import('./components/Help'));
 
+// Composants de style
 const LoadingContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 50px 0;
+  padding: 40px 0;
   text-align: center;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: ${theme.radius.md};
-  box-shadow: ${theme.shadows.md};
-  animation: fadeIn 0.3s ease;
 `;
 
 const LoadingText = styled.p`
@@ -97,11 +89,6 @@ const ThemeToggle = styled.button`
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.3);
-    transform: translateY(-2px);
-  }
 `;
 
 const TipCard = styled.div`
@@ -110,69 +97,74 @@ const TipCard = styled.div`
   padding: 15px;
   border-radius: ${theme.radius.md};
   margin-bottom: 20px;
+`;
+
+// Grille horizontale pour les paramètres avec hauteurs égales
+const TopRow = styled.div`
   display: flex;
-  align-items: center;
-  gap: 15px;
-  box-shadow: ${theme.shadows.md};
-  animation: fadeIn 0.5s ease;
+  gap: 20px;
+  width: 100%;
+  margin-bottom: 20px;
   
-  svg {
-    font-size: 2rem;
-    min-width: 2rem;
+  @media (max-width: 992px) {
+    flex-direction: column;
   }
 `;
 
-const TipText = styled.div`
+const TopRowCard = styled.div`
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   
-  h4 {
-    margin: 0 0 5px 0;
-    font-size: 1.1rem;
+  & > * {
+    flex-grow: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
   
-  p {
-    margin: 0;
-    font-size: 0.9rem;
-    opacity: 0.9;
+  /* Pour s'assurer que le contenu des cartes occupe toute la hauteur */
+  .card-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Pour le composant StockForm, position du bouton en bas */
+  .stock-form-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+  }
+  
+  /* S'assurer que la liste d'actions populaires prend toute la hauteur disponible */
+  .actions-populaires {
+    flex-grow: 1;
+    overflow-y: auto;
+    max-height: 350px;
   }
 `;
 
-const TipButton = styled.button`
-  background-color: rgba(255, 255, 255, 0.25);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: ${theme.radius.sm};
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.4);
-    transform: translateY(-2px);
-  }
+const FullWidthRow = styled.div`
+  width: 100%;
+  margin-bottom: 20px;
 `;
 
 // Astuces à afficher
 const TIPS = [
   {
     title: "Qu'est-ce que le DCA ?",
-    content: "Le Dollar-Cost Averaging est une stratégie d'investissement qui consiste à investir régulièrement des sommes fixes, indépendamment des fluctuations du marché.",
-    button: "En savoir plus",
-    icon: <FaBook />
+    content: "Le Dollar-Cost Averaging est une stratégie d'investissement qui consiste à investir régulièrement des sommes fixes, indépendamment des fluctuations du marché."
   },
   {
     title: "Optimisez votre simulation",
-    content: "Essayez de comparer plusieurs actions sur une même période pour voir laquelle performe le mieux sur le long terme.",
-    button: "Voir un exemple",
-    icon: <FaChartBar />
+    content: "Essayez de comparer plusieurs actions sur une même période pour voir laquelle performe le mieux sur le long terme."
   },
   {
     title: "Saviez-vous ?",
-    content: "Le DCA réduit l'impact de la volatilité et permet d'accumuler plus de parts lorsque les prix sont bas.",
-    button: "Découvrir",
-    icon: <FaLightbulb />
+    content: "Le DCA réduit l'impact de la volatilité et permet d'accumuler plus de parts lorsque les prix sont bas."
   }
 ];
 
@@ -198,7 +190,6 @@ function App() {
         setDataLoaded(true);
       } catch (error) {
         console.error('Erreur lors du préchargement des données', error);
-        // Continuer même en cas d'erreur
         setDataLoaded(true);
       }
     };
@@ -217,7 +208,7 @@ function App() {
   
   const handleSelectStock = (stock) => {
     setStockInfo(stock);
-    setCurrentStep(2); // Passer à l'étape de configuration après la sélection d'une action
+    setCurrentStep(2);
   };
   
   const handleAddStock = (stock) => {
@@ -228,7 +219,7 @@ function App() {
     
     setSelectedStocks([...selectedStocks, stock]);
     setStockInfo(null);
-    setCurrentStep(3); // Passer à l'étape d'investissement mensuel
+    setCurrentStep(3);
   };
   
   const handleRemoveStock = (index) => {
@@ -236,7 +227,6 @@ function App() {
     newStocks.splice(index, 1);
     setSelectedStocks(newStocks);
     
-    // Si on a déjà calculé des performances, les mettre à jour
     if (performanceData.length > 0) {
       const newPerformance = [...performanceData];
       newPerformance.splice(index, 1);
@@ -246,17 +236,14 @@ function App() {
   
   const fetchStockData = async (symbol, progressIndex, totalStocks) => {
     try {
-      // Vérifier si nous avons déjà les données
       if (stocksData[symbol]) {
         updateLoadingProgress(progressIndex, totalStocks, `Données en cache pour ${symbol}`);
         return stocksData[symbol];
       }
       
-      // Sinon, les récupérer via l'API
       setLoadingMessage(`Récupération des données pour ${symbol}...`);
       const data = await getMonthlyStockData(symbol);
       
-      // Mettre en cache les données
       setStocksData(prevState => ({
         ...prevState,
         [symbol]: data
@@ -282,7 +269,7 @@ function App() {
     
     setIsLoading(true);
     setShowResults(false);
-    setCurrentStep(4); // Passer à l'étape d'analyse
+    setCurrentStep(4);
     setLoadingProgress(0);
     setLoadingMessage('Initialisation du calcul...');
     
@@ -292,10 +279,8 @@ function App() {
       for (let i = 0; i < selectedStocks.length; i++) {
         const stock = selectedStocks[i];
         
-        // Récupérer les données de l'action
         const stockData = await fetchStockData(stock.symbol, i, selectedStocks.length);
         
-        // Calculer la performance DCA
         setLoadingMessage(`Calcul des performances pour ${stock.symbol}...`);
         const performance = calculateDCAPerformance(
           stockData,
@@ -310,7 +295,6 @@ function App() {
       setLoadingMessage('Finalisation des résultats...');
       setLoadingProgress(95);
       
-      // Petit délai pour afficher la progression à 95%
       setTimeout(() => {
         setPerformanceData(newPerformanceData);
         setShowResults(true);
@@ -327,81 +311,73 @@ function App() {
   
   const renderSimulator = () => (
     <>
-      {/* Astuce du jour */}
       <TipCard>
-        {TIPS[currentTip].icon}
-        <TipText>
-          <h4>{TIPS[currentTip].title}</h4>
-          <p>{TIPS[currentTip].content}</p>
-        </TipText>
-        <TipButton>{TIPS[currentTip].button}</TipButton>
+        <h4>{TIPS[currentTip].title}</h4>
+        <p>{TIPS[currentTip].content}</p>
       </TipCard>
     
-      {/* Ajout du composant d'onboarding */}
       <Onboarding currentStep={currentStep} />
       
-      <Grid columns={12}>
-        <GridItem span={12}>
-          <StockSearch onSelectStock={handleSelectStock} />
-        </GridItem>
-      </Grid>
-      
-      <ContentContainer direction="column" desktopDirection="row">
-        <GridItem span={4}>
+      {/* Paramètres sur la même ligne horizontale avec hauteurs égales */}
+      <TopRow>
+        <TopRowCard>
+          <StockSearch 
+            onSelectStock={handleSelectStock}
+            style={{ height: '100%' }}
+          />
+        </TopRowCard>
+        
+        <TopRowCard>
           <StockForm
             stockInfo={stockInfo}
             onAddStock={handleAddStock}
             selectedStocks={selectedStocks}
             onRemoveStock={handleRemoveStock}
             onCalculate={handleCalculate}
+            style={{ height: '100%' }}
           />
-        </GridItem>
-        
-        {selectedStocks.length > 0 && (
-          <GridItem span={8}>
-            <Card style={{height: '100%'}}>
-              <ProgressiveContainer loaded={dataLoaded}>
-                {isLoading ? (
-                  <LoadingContainer>
-                    <LoadingSpinner size="40px" />
-                    <LoadingText>Chargement des données et calcul des performances...</LoadingText>
-                    <LoadingProgress progress={loadingProgress} />
-                    <LoadingInfo>{loadingMessage}</LoadingInfo>
-                  </LoadingContainer>
-                ) : showResults && performanceData.length > 0 ? (
-                  <PerformanceChart 
-                    performanceData={performanceData.slice(0, 1)} 
-                    selectedStocks={selectedStocks.slice(0, 1)} 
-                  />
-                ) : (
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '300px',
-                    textAlign: 'center',
-                    padding: '20px'
-                  }}>
-                    <FaChartBar size={50} color={theme.gray} />
-                    <h3>Prêt à analyser votre investissement ?</h3>
-                    <p>Cliquez sur "Calculer la performance" pour visualiser les résultats.</p>
-                  </div>
-                )}
-              </ProgressiveContainer>
-            </Card>
-          </GridItem>
-        )}
-      </ContentContainer>
+        </TopRowCard>
+      </TopRow>
       
-      {showResults && performanceData.length > 0 && (
-        <ResultsContainer>
-          <PerformanceSummary 
+      {/* Évolution du portefeuille en pleine largeur */}
+      <FullWidthRow>
+        {isLoading ? (
+          <Card>
+            <LoadingContainer>
+              <LoadingSpinner size="40px" />
+              <LoadingText>Chargement des données et calcul des performances...</LoadingText>
+              <LoadingProgress progress={loadingProgress} />
+              <LoadingInfo>{loadingMessage}</LoadingInfo>
+            </LoadingContainer>
+          </Card>
+        ) : showResults && performanceData.length > 0 ? (
+          <PerformanceChart 
             performanceData={performanceData} 
             selectedStocks={selectedStocks} 
           />
-          
-          <PerformanceChart 
+        ) : (
+          <Card>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '300px',
+              textAlign: 'center',
+              padding: '20px'
+            }}>
+              <FaChartBar size={50} color={theme.gray} />
+              <h3>Prêt à analyser votre investissement ?</h3>
+              <p>Cliquez sur "Calculer la performance" pour visualiser les résultats.</p>
+            </div>
+          </Card>
+        )}
+      </FullWidthRow>
+      
+      {/* Résultats détaillés */}
+      {showResults && performanceData.length > 0 && (
+        <div style={{ marginTop: '30px' }}>
+          <PerformanceSummary 
             performanceData={performanceData} 
             selectedStocks={selectedStocks} 
           />
@@ -410,7 +386,7 @@ function App() {
             performanceData={performanceData} 
             selectedStocks={selectedStocks} 
           />
-        </ResultsContainer>
+        </div>
       )}
     </>
   );
@@ -431,10 +407,8 @@ function App() {
       </Header>
       
       <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab}>
-        {/* Onglet Simulateur */}
         {renderSimulator()}
         
-        {/* Onglet Historique */}
         <Suspense fallback={<LoadingContainer><LoadingSpinner size="40px" /></LoadingContainer>}>
           <Card>
             <h2>Historique des simulations</h2>
@@ -442,17 +416,14 @@ function App() {
           </Card>
         </Suspense>
         
-        {/* Onglet Comparaison */}
         <Suspense fallback={<LoadingContainer><LoadingSpinner size="40px" /></LoadingContainer>}>
           <ComparisonComponent />
         </Suspense>
         
-        {/* Onglet Éducation */}
         <Suspense fallback={<LoadingContainer><LoadingSpinner size="40px" /></LoadingContainer>}>
           <Education />
         </Suspense>
         
-        {/* Onglet Aide */}
         <Suspense fallback={<LoadingContainer><LoadingSpinner size="40px" /></LoadingContainer>}>
           <Help />
         </Suspense>

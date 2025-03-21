@@ -1,16 +1,14 @@
 import React from 'react';
 import { 
-  SummaryCards, 
-  SummaryCard, 
-  SummaryTitle, 
+  Card,
   SummaryValue, 
-  SummarySubValue 
+  SummarySubValue,
 } from './StyledComponents';
 import { formatCurrency, formatPercent, formatShares } from '../utils/calculationUtils';
 import { getStockColor } from '../utils/theme';
 import { 
   FaMoneyBillWave, FaChartLine, FaArrowUp, FaArrowDown, 
-  FaCoins, FaCalendarAlt, FaPercentage, FaTrophy
+  FaCoins, FaCalendarAlt, FaPercentage
 } from 'react-icons/fa';
 import StockIcon from './StockIcon';
 import Tooltip from './Tooltip';
@@ -24,104 +22,180 @@ import {
   Area 
 } from 'recharts';
 
-// Nouveaux composants stylisés
-const SparklineContainer = styled.div`
-  height: 50px;
-  margin-top: 5px;
-  margin-bottom: 10px;
+// Styles améliorés
+const SummaryContainer = styled.div`
+  width: 100%;
 `;
 
-const MetricWrapper = styled.div`
+const SummaryRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  width: 100%;
+`;
+
+const SummaryCard = styled(Card)`
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: visible;
+  border-top: 4px solid ${props => props.color || theme.primary};
+  margin-bottom: 0;
+`;
+
+const SectionTitle = styled.h3`
+  font-size: 1.1rem;
+  color: ${theme.secondary};
+  margin: 60px 0 20px 0;  /* Augmentation significative de la marge supérieure */
+  padding-bottom: 8px;
+  border-bottom: 1px solid ${theme.gray};
+  width: 100%;
+`;
+
+const CardTitle = styled.div`
+  font-size: 1rem;
+  color: ${theme.darkGray};
   display: flex;
   align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  
+  svg {
+    color: ${props => props.iconColor || theme.primary};
+  }
 `;
 
-const MiniStat = styled.div`
+const SparklineContainer = styled.div`
+  height: 60px;
+  margin-bottom: 15px;
+  position: relative;
+`;
+
+const SparklineLabel = styled.div`
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: ${theme.darkGray};
+  z-index: 2;
+`;
+
+const SparklineInfo = styled.div`
+  font-size: 0.75rem;
+  color: ${theme.darkGray};
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 15px;
+`;
+
+const ValueWrapper = styled.div`
+  margin: 10px 0;
+`;
+
+const CustomValue = styled.div`
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: ${theme.dark};
+  margin-bottom: 5px;
+`;
+
+const MetricInfo = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  gap: 10px;
+`;
+
+const MetricBadge = styled.div`
   font-size: 0.8rem;
   color: ${theme.darkGray};
   display: flex;
   align-items: center;
-  margin-left: 8px;
   background-color: rgba(0, 0, 0, 0.05);
   padding: 2px 6px;
   border-radius: 10px;
   
   svg {
-    margin-right: 3px;
-    font-size: 0.7rem;
+    margin-right: 4px;
+    font-size: 0.75rem;
   }
 `;
 
-const AnimatedValue = styled.div`
-  position: relative;
-  display: inline-block;
-  
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, ${theme.primary}, transparent);
-    animation: shimmer 2s infinite;
-    opacity: ${props => props.highlight ? 1 : 0};
-  }
-  
-  @keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
-`;
-
-const StockCardHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 10px;
-`;
-
-const StockRank = styled.div`
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background-color: ${props => props.index === 0 ? '#FFD700' : props.index === 1 ? '#C0C0C0' : props.index === 2 ? '#CD7F32' : theme.light};
-  color: ${props => props.index < 3 ? '#000' : theme.darkGray};
+const RankBadge = styled.div`
+  background-color: ${props => props.index === 0 ? '#FFD70050' : props.index === 1 ? '#C0C0C050' : '#CD7F3250'};
+  color: ${props => props.index === 0 ? '#856200' : props.index === 1 ? '#757575' : '#8B4513'};
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 0.9rem;
 `;
 
-const MiniSparkline = ({ data, dataKey, color, type = 'line' }) => {
+// Ligne proportionnelle unique
+const ProportionLine = styled.div`
+  height: 3px;
+  background-color: ${props => props.color || theme.primary};
+  width: ${props => props.width || '100%'};
+  border-radius: 1.5px;
+  margin-bottom: 10px;
+  
+  &::after {
+    content: '${props => props.label || ''}';
+    position: absolute;
+    right: 20px;
+    margin-top: 5px;
+    font-size: 0.7rem;
+    color: ${theme.darkGray};
+  }
+`;
+
+// MiniSparkline amélioré avec label
+const MiniSparkline = ({ data, dataKey, color, type = 'line', label = null }) => {
+  if (!data || data.length === 0) return null;
+  
   return (
-    <SparklineContainer>
-      <ResponsiveContainer width="100%" height="100%">
-        {type === 'area' ? (
-          <AreaChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
-            <Area 
-              type="monotone"
-              dataKey={dataKey}
-              stroke={color}
-              fill={`${color}30`}
-              isAnimationActive={false}
-            />
-          </AreaChart>
-        ) : (
-          <LineChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
-            <Line 
-              type="monotone"
-              dataKey={dataKey}
-              stroke={color}
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
-          </LineChart>
-        )}
-      </ResponsiveContainer>
-    </SparklineContainer>
+    <>
+      <SparklineContainer>
+        {label && <SparklineLabel>{label}</SparklineLabel>}
+        <ResponsiveContainer width="100%" height="100%">
+          {type === 'area' ? (
+            <AreaChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
+              <Area 
+                type="monotone"
+                dataKey={dataKey}
+                stroke={color}
+                fill={`${color}30`}
+                isAnimationActive={false}
+              />
+            </AreaChart>
+          ) : (
+            <LineChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
+              <Line 
+                type="monotone"
+                dataKey={dataKey}
+                stroke={color}
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={false}
+              />
+            </LineChart>
+          )}
+        </ResponsiveContainer>
+      </SparklineContainer>
+      {label && (
+        <SparklineInfo>
+          {label === 'Évolution' ? 'Valeur du portefeuille sur la période' : 
+          label === 'Investissement' ? 'Montant investi cumulé' : 
+          label === 'Performance' ? 'Évolution de la valeur' : ''}
+        </SparklineInfo>
+      )}
+    </>
   );
 };
 
@@ -146,6 +220,11 @@ const calculateVolatility = (returns) => {
 };
 
 const PerformanceSummary = ({ performanceData, selectedStocks }) => {
+  // Vérifier si nous avons des données
+  if (!performanceData || performanceData.length === 0 || !selectedStocks || selectedStocks.length === 0) {
+    return <div>Aucune donnée de performance disponible.</div>;
+  }
+  
   // Calculer les statistiques de performances
   const summaryStats = performanceData.map((stockData, index) => {
     const lastEntry = stockData[stockData.length - 1];
@@ -206,87 +285,136 @@ const PerformanceSummary = ({ performanceData, selectedStocks }) => {
   const totalValue = summaryStats.reduce((sum, stat) => sum + stat.portfolioValue, 0);
   const totalROI = ((totalValue - totalInvested) / totalInvested) * 100;
   
-  // Calculer le CAGR global (en supposant que les périodes d'investissement sont les mêmes)
+  // Calculer le CAGR global
   const avgYears = summaryStats.reduce((sum, stat) => sum + stat.years, 0) / summaryStats.length;
   const globalCAGR = calculateCAGR(totalInvested, totalValue, avgYears);
   
-  // Créer des données de sparkline combinées
-  const combinedSparklineData = [];
+  // Créer les données de sparkline pour l'investissement total et la valeur totale
+  const combinedData = {};
+  
+  // Initialiser la structure
   if (performanceData.length > 0 && performanceData[0].length > 0) {
-    performanceData[0].forEach((_, dateIndex) => {
-      const dataPoint = { date: performanceData[0][dateIndex].date, value: 0 };
-      performanceData.forEach(stockData => {
-        if (stockData[dateIndex]) {
-          dataPoint.value += stockData[dateIndex].portfolioValue;
+    performanceData[0].forEach(dataPoint => {
+      combinedData[dataPoint.date] = {
+        date: dataPoint.date,
+        portfolioValue: 0,
+        totalInvested: 0
+      };
+    });
+    
+    // Remplir avec les données de chaque stock
+    performanceData.forEach(stockData => {
+      stockData.forEach(dataPoint => {
+        if (combinedData[dataPoint.date]) {
+          combinedData[dataPoint.date].portfolioValue += dataPoint.portfolioValue;
+          combinedData[dataPoint.date].totalInvested += dataPoint.totalInvested;
         }
       });
-      combinedSparklineData.push(dataPoint);
     });
   }
   
+  // Convertir en tableaux pour les sparklines
+  const combinedSparklineData = Object.values(combinedData).sort((a, b) => 
+    new Date(a.date) - new Date(b.date)
+  );
+  
+  // Extraire les données d'investissement et de valeur pour les sparklines
+  const valueData = combinedSparklineData.map(d => ({
+    date: d.date,
+    value: d.portfolioValue
+  }));
+  
+  const investmentData = combinedSparklineData.map(d => ({
+    date: d.date,
+    value: d.totalInvested
+  }));
+  
+  // Données pour le profit réalisé
+  const profitData = combinedSparklineData.map(d => ({
+    date: d.date,
+    value: d.portfolioValue - d.totalInvested
+  }));
+  
   return (
-    <>
-      <SummaryCards>
-        <SummaryCard>
-          <SummaryTitle>
+    <SummaryContainer>
+      {/* Résumé global */}
+      <SummaryRow>
+        <SummaryCard color={theme.primary}>
+          <CardTitle iconColor={theme.primary}>
             <FaMoneyBillWave /> Total investi
             <Tooltip term="investissement" />
-          </SummaryTitle>
+          </CardTitle>
+          
           <MiniSparkline 
-            data={combinedSparklineData} 
+            data={investmentData} 
             dataKey="value" 
             color={theme.primary} 
             type="area" 
+            label="Investissement"
           />
-          <SummaryValue>
-            <AnimatedValue highlight={totalValue > totalInvested}>
-              {formatCurrency(totalInvested)}
-            </AnimatedValue>
-          </SummaryValue>
-          <MetricWrapper>
+          
+          <ValueWrapper>
+            <CustomValue>{formatCurrency(totalInvested)}</CustomValue>
+            <ProportionLine 
+              color={theme.primary} 
+              label="Montant investi cumulé"
+            />
+          </ValueWrapper>
+          
+          <MetricInfo>
             <SummarySubValue>
               {summaryStats.length > 0 && `${formatCurrency(totalInvested / summaryStats.length)} par action`}
             </SummarySubValue>
-            <MiniStat>
+            <MetricBadge>
               <FaCalendarAlt /> {avgYears.toFixed(1)} ans
-            </MiniStat>
-          </MetricWrapper>
+            </MetricBadge>
+          </MetricInfo>
         </SummaryCard>
         
-        <SummaryCard>
-          <SummaryTitle>
+        <SummaryCard color={theme.secondary}>
+          <CardTitle iconColor={theme.secondary}>
             <FaChartLine /> Valeur actuelle
-          </SummaryTitle>
+          </CardTitle>
+          
           <MiniSparkline 
-            data={combinedSparklineData} 
+            data={valueData} 
             dataKey="value" 
             color={totalROI > 0 ? 'green' : 'red'} 
             type="area" 
+            label="Évolution"
           />
-          <SummaryValue>
-            <AnimatedValue highlight={true}>
-              {formatCurrency(totalValue)}
-            </AnimatedValue>
-          </SummaryValue>
+          
+          <ValueWrapper>
+            <CustomValue>{formatCurrency(totalValue)}</CustomValue>
+            <ProportionLine 
+              color={totalROI > 0 ? 'green' : 'red'}
+              label="Valeur du portefeuille"
+            />
+          </ValueWrapper>
+          
           <SummarySubValue 
             positive={totalROI > 0} 
             negative={totalROI < 0}
           >
             {totalROI > 0 ? <FaArrowUp /> : <FaArrowDown />}
-            {totalROI > 0 ? '+' : ''}{formatPercent(totalROI)}
+            {totalROI > 0 ? '+' : ''}{formatPercent(totalROI / 100)}
           </SummarySubValue>
         </SummaryCard>
         
-        <SummaryCard>
-          <SummaryTitle>
+        <SummaryCard color={theme.tertiary}>
+          <CardTitle iconColor={theme.tertiary}>
             <FaCoins /> Profit/Perte
-          </SummaryTitle>
-          <SummaryValue>
-            <AnimatedValue highlight={totalValue - totalInvested !== 0}>
-              {formatCurrency(totalValue - totalInvested)}
-            </AnimatedValue>
-          </SummaryValue>
-          <MetricWrapper>
+          </CardTitle>
+          
+          <ValueWrapper style={{ marginTop: '75px' }}>
+            <CustomValue>{formatCurrency(totalValue - totalInvested)}</CustomValue>
+            <ProportionLine 
+              color={totalValue > totalInvested ? 'green' : 'red'} 
+              label="Profit réalisé"
+            />
+          </ValueWrapper>
+          
+          <MetricInfo>
             <SummarySubValue 
               positive={globalCAGR > 0} 
               negative={globalCAGR < 0}
@@ -294,61 +422,85 @@ const PerformanceSummary = ({ performanceData, selectedStocks }) => {
               <FaPercentage /> CAGR: {globalCAGR.toFixed(2)}%
               <Tooltip term="cagr" />
             </SummarySubValue>
-          </MetricWrapper>
+          </MetricInfo>
         </SummaryCard>
-      </SummaryCards>
+      </SummaryRow>
       
-      <SummaryCards>
-        {sortedStats.map((stat, index) => (
-          <SummaryCard key={stat.symbol} color={stat.color}>
-            <StockCardHeader>
-              <SummaryTitle>
-                <StockIcon symbol={stat.symbol} />
-                {stat.name} ({stat.symbol})
-              </SummaryTitle>
-              <StockRank index={index}>
-                {index < 3 ? <FaTrophy /> : index + 1}
-              </StockRank>
-            </StockCardHeader>
+      {/* Section Performance par action avec espacement augmenté */}
+      <SectionTitle>Performance par action</SectionTitle>
+      
+      {sortedStats.map((stat, index) => (
+        <SummaryCard 
+          key={stat.symbol}
+          color={stat.color}
+          style={{ marginBottom: '20px' }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <StockIcon symbol={stat.symbol} />
+              <span style={{ fontWeight: '600' }}>{stat.name} ({stat.symbol})</span>
+            </div>
             
-            <MiniSparkline 
-              data={stat.sparklineData} 
-              dataKey="value" 
-              color={stat.color} 
+            {index < 3 && (
+              <RankBadge index={index}>
+                {index === 0 ? '🏆 1er' : index === 1 ? '🥈 2ème' : '🥉 3ème'}
+              </RankBadge>
+            )}
+          </div>
+          
+          <SparklineContainer style={{ height: '80px' }}>
+            <SparklineLabel>Performance</SparklineLabel>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart 
+                data={stat.sparklineData} 
+                margin={{ top: 5, right: 0, left: 0, bottom: 5 }}
+              >
+                <Line 
+                  type="monotone"
+                  dataKey="value"
+                  stroke={stat.color}
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </SparklineContainer>
+          <SparklineInfo>Évolution de la valeur</SparklineInfo>
+          
+          <ValueWrapper>
+            <CustomValue>{formatCurrency(stat.portfolioValue)}</CustomValue>
+            <ProportionLine 
+              color={stat.color}
+              label="Évolution de la valeur"
             />
+          </ValueWrapper>
+          
+          <SummarySubValue 
+            positive={stat.roi > 0} 
+            negative={stat.roi < 0}
+          >
+            {stat.roi > 0 ? <FaArrowUp /> : <FaArrowDown />}
+            {stat.roi > 0 ? '+' : ''}{formatPercent(stat.roi / 100)}
+          </SummarySubValue>
+          
+          <SummarySubValue style={{ marginTop: '5px' }}>
+            {formatShares(stat.totalShares)} parts à {formatCurrency(stat.currentPrice)}
+          </SummarySubValue>
+          
+          <MetricInfo>
+            <MetricBadge title="Volatilité">
+              σ: {stat.volatility.toFixed(2)}%
+              <Tooltip term="volatilité" />
+            </MetricBadge>
             
-            <SummaryValue>
-              <AnimatedValue highlight={stat.roi > 5}>
-                {formatCurrency(stat.portfolioValue)}
-              </AnimatedValue>
-            </SummaryValue>
-            
-            <SummarySubValue 
-              positive={stat.roi > 0} 
-              negative={stat.roi < 0}
-            >
-              {stat.roi > 0 ? <FaArrowUp /> : <FaArrowDown />}
-              {stat.roi > 0 ? '+' : ''}{formatPercent(stat.roi)}
-            </SummarySubValue>
-            
-            <SummarySubValue>
-              {formatShares(stat.totalShares)} parts à {formatCurrency(stat.currentPrice)}
-            </SummarySubValue>
-            
-            <MetricWrapper>
-              <MiniStat title="Volatilité">
-                σ: {stat.volatility.toFixed(2)}%
-                <Tooltip term="volatilité" />
-              </MiniStat>
-              
-              <MiniStat title="Taux de croissance annuel composé">
-                CAGR: {stat.cagr.toFixed(2)}%
-              </MiniStat>
-            </MetricWrapper>
-          </SummaryCard>
-        ))}
-      </SummaryCards>
-    </>
+            <MetricBadge title="Taux de croissance annuel composé">
+              CAGR: {stat.cagr.toFixed(2)}%
+            </MetricBadge>
+          </MetricInfo>
+        </SummaryCard>
+      ))}
+    </SummaryContainer>
   );
 };
 

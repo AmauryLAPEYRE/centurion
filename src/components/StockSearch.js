@@ -112,7 +112,7 @@ const MainListingBadge = styled.span`
   font-weight: 600;
 `;
 
-const StockSearch = ({ onSelectStock }) => {
+const StockSearch = ({ onSelectStock, style }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [popularStocks, setPopularStocks] = useState([]);
@@ -163,80 +163,82 @@ const StockSearch = ({ onSelectStock }) => {
   };
   
   return (
-    <Card>
+    <Card style={style}>
       <CardTitle><FaSearch /> Rechercher une action</CardTitle>
-      <Form>
-        <InputGroup>
-          <Label>Nom ou symbole de l'action</Label>
-          <FlexRow>
-            <Input 
-              id="searchQuery" 
-              type="text" 
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ex: Apple, AAPL, Tesla..."
-              style={{ flex: 1 }}
-            />
-            <Button 
-              onClick={handleSearch} 
-              disabled={!searchQuery.trim() || isLoading}
-            >
-              {isLoading ? <LoadingSpinner /> : <FaSearch />} Rechercher
-            </Button>
-          </FlexRow>
-          <SearchHint>
-            Exemples : Tesla (TSLA), Apple (AAPL), Microsoft (MSFT), Amazon (AMZN)
-          </SearchHint>
-        </InputGroup>
-        
-        {searchResults.length > 0 && (
-          <SearchResults>
-            {searchResults.map((result, index) => (
-              <SearchItem 
-                key={`${result.symbol}-${index}`}
-                onClick={() => handleSelectResult(result)}
+      <div className="card-content">
+        <Form>
+          <InputGroup>
+            <Label>Nom ou symbole de l'action</Label>
+            <FlexRow>
+              <Input 
+                id="searchQuery" 
+                type="text" 
+                value={searchQuery} 
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ex: Apple, AAPL, Tesla..."
+                style={{ flex: 1 }}
+              />
+              <Button 
+                onClick={handleSearch} 
+                disabled={!searchQuery.trim() || isLoading}
               >
-                <StockIcon symbol={result.symbol} />
-                <div style={{ flex: 1 }}>
-                  <strong>{result.name || result.symbol}</strong>
-                  <div style={{ fontSize: '0.85rem', color: theme.darkGray }}>
-                    {result.region}
-                    {result.isMainListing && <MainListingBadge>Principal</MainListingBadge>}
+                {isLoading ? <LoadingSpinner /> : <FaSearch />} Rechercher
+              </Button>
+            </FlexRow>
+            <SearchHint>
+              Exemples : Tesla (TSLA), Apple (AAPL), Microsoft (MSFT), Amazon (AMZN)
+            </SearchHint>
+          </InputGroup>
+          
+          {searchResults.length > 0 && (
+            <SearchResults>
+              {searchResults.map((result, index) => (
+                <SearchItem 
+                  key={`${result.symbol}-${index}`}
+                  onClick={() => handleSelectResult(result)}
+                >
+                  <StockIcon symbol={result.symbol} />
+                  <div style={{ flex: 1 }}>
+                    <strong>{result.name || result.symbol}</strong>
+                    <div style={{ fontSize: '0.85rem', color: theme.darkGray }}>
+                      {result.region}
+                      {result.isMainListing && <MainListingBadge>Principal</MainListingBadge>}
+                    </div>
                   </div>
-                </div>
-                <Badge info>{result.symbol}</Badge>
-              </SearchItem>
-            ))}
-          </SearchResults>
-        )}
-        
-        {popularStocks.length > 0 && (
-          <PopularStocksContainer>
-            <Label><FaFire /> Actions populaires</Label>
-            {popularStocks.map((stock) => (
-              <PopularStockItem 
-                key={stock.symbol}
-                onClick={() => handleSelectResult({ symbol: stock.symbol, name: stock.symbol })}
-              >
-                <StockInfo>
-                  <StockIcon symbol={stock.symbol} />
+                  <Badge info>{result.symbol}</Badge>
+                </SearchItem>
+              ))}
+            </SearchResults>
+          )}
+          
+          {popularStocks.length > 0 && (
+            <div className="actions-populaires">
+              <Label><FaFire /> Actions populaires</Label>
+              {popularStocks.map((stock) => (
+                <PopularStockItem 
+                  key={stock.symbol}
+                  onClick={() => handleSelectResult({ symbol: stock.symbol, name: stock.symbol })}
+                >
+                  <StockInfo>
+                    <StockIcon symbol={stock.symbol} />
+                    <div>
+                      <strong>{stock.symbol}</strong>
+                    </div>
+                  </StockInfo>
                   <div>
-                    <strong>{stock.symbol}</strong>
+                    {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(stock.price)}
+                    {' '}
+                    <StockChange positive={stock.change >= 0}>
+                      {stock.change >= 0 ? '↑' : '↓'} {stock.changePercent}
+                    </StockChange>
                   </div>
-                </StockInfo>
-                <div>
-                  {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(stock.price)}
-                  {' '}
-                  <StockChange positive={stock.change >= 0}>
-                    {stock.change >= 0 ? '↑' : '↓'} {stock.changePercent}
-                  </StockChange>
-                </div>
-              </PopularStockItem>
-            ))}
-          </PopularStocksContainer>
-        )}
-      </Form>
+                </PopularStockItem>
+              ))}
+            </div>
+          )}
+        </Form>
+      </div>
     </Card>
   );
 };

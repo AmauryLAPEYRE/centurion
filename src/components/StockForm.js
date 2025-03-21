@@ -16,7 +16,7 @@ import StockIcon from './StockIcon';
 import { getStockColor } from '../utils/theme';
 import { FaCalendarAlt, FaMoneyBillWave, FaPlus, FaChartLine } from 'react-icons/fa';
 
-const StockForm = ({ onAddStock, selectedStocks, onRemoveStock, onCalculate, stockInfo }) => {
+const StockForm = ({ onAddStock, selectedStocks, onRemoveStock, onCalculate, stockInfo, style }) => {
   const [startDate, setStartDate] = useState('2010-01-01');
   const [monthlyInvestment, setMonthlyInvestment] = useState(100);
   
@@ -37,52 +37,57 @@ const StockForm = ({ onAddStock, selectedStocks, onRemoveStock, onCalculate, sto
   const minDate = tenYearsAgo.toISOString().split('T')[0];
   
   return (
-    <Card>
+    <Card style={style}>
       <CardTitle><FaChartLine /> Paramètres d'investissement</CardTitle>
-      <Form>
-        {stockInfo && (
-          <div>
-            <Label>Action sélectionnée</Label>
-            <StockItem>
-              <StockIcon symbol={stockInfo.symbol} />
-              <strong>{stockInfo.name || stockInfo.symbol}</strong>
-              <Badge info>{stockInfo.symbol}</Badge>
-            </StockItem>
-          </div>
-        )}
-        
-        <InputGroup>
-          <Label><FaCalendarAlt /> Date de début</Label>
-          <Input 
-            id="startDate" 
-            type="date" 
-            value={startDate} 
-            onChange={(e) => setStartDate(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
-            min={minDate}
-          />
-        </InputGroup>
-        
-        <InputGroup>
-          <Label><FaMoneyBillWave /> Investissement mensuel (€)</Label>
-          <Input 
-            id="monthlyInvestment" 
-            type="number" 
-            min="1" 
-            value={monthlyInvestment} 
-            onChange={(e) => setMonthlyInvestment(e.target.value)}
-          />
-        </InputGroup>
-        
-        <Button 
-          onClick={handleAddStock} 
-          disabled={!stockInfo}
-        >
-          <FaPlus /> Ajouter à la liste
-        </Button>
+      <div className="stock-form-container">
+        <div className="card-content">
+          <Form>
+            {stockInfo && (
+              <div>
+                <Label>Action sélectionnée</Label>
+                <StockItem>
+                  <StockIcon symbol={stockInfo.symbol} />
+                  <strong>{stockInfo.name || stockInfo.symbol}</strong>
+                  <Badge info>{stockInfo.symbol}</Badge>
+                </StockItem>
+              </div>
+            )}
+            
+            <InputGroup>
+              <Label><FaCalendarAlt /> Date de début</Label>
+              <Input 
+                id="startDate" 
+                type="date" 
+                value={startDate} 
+                onChange={(e) => setStartDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                min={minDate}
+              />
+            </InputGroup>
+            
+            <InputGroup>
+              <Label><FaMoneyBillWave /> Investissement mensuel (€)</Label>
+              <Input 
+                id="monthlyInvestment" 
+                type="number" 
+                min="1" 
+                value={monthlyInvestment} 
+                onChange={(e) => setMonthlyInvestment(e.target.value)}
+              />
+            </InputGroup>
+            
+            <Button 
+              onClick={handleAddStock} 
+              disabled={!stockInfo}
+              style={{ marginTop: 'auto' }}
+            >
+              <FaPlus /> Ajouter à la liste
+            </Button>
+          </Form>
+        </div>
         
         {selectedStocks.length > 0 && (
-          <>
+          <div style={{ marginTop: '20px' }}>
             <Label>Actions sélectionnées</Label>
             <FlexRow>
               {selectedStocks.map((stock, index) => (
@@ -105,12 +110,13 @@ const StockForm = ({ onAddStock, selectedStocks, onRemoveStock, onCalculate, sto
             <Button 
               onClick={onCalculate}
               secondary
+              style={{ width: '100%', marginTop: '15px' }}
             >
               <FaChartLine /> Calculer la performance
             </Button>
-          </>
+          </div>
         )}
-      </Form>
+      </div>
     </Card>
   );
 };

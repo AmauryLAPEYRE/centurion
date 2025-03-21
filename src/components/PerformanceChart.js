@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, ReferenceLine
@@ -22,10 +22,9 @@ const ChartContainer = styled.div`
 
 const EventMarker = styled.div`
   position: absolute;
-  top: ${props => props.top}px;
-  left: ${props => props.left}px;
   width: 12px;
   height: 12px;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
   background-color: ${theme.primary};
   border: 2px solid white;
@@ -36,17 +35,24 @@ const EventMarker = styled.div`
   /* Animation de pulsation pour attirer l'attention */
   animation: pulse 2s infinite;
   @keyframes pulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.2); opacity: 0.8; }
-    100% { transform: scale(1); opacity: 1; }
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
   }
+`;
+
+const EventConnector = styled.div`
+  position: absolute;
+  width: 1px;
+  background-color: rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  z-index: 5;
 `;
 
 const EventTooltip = styled.div`
   position: absolute;
-  top: ${props => props.top - 70}px;
-  left: ${props => props.left}px;
-  transform: translateX(-50%);
+  transform: translate(-50%, -100%);
+  margin-top: -10px;
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
   padding: 8px 12px;
@@ -108,8 +114,10 @@ const formatYAxisTick = (value) => {
     return `${(value / 1000000).toFixed(1)}M €`;
   } else if (value >= 1000) {
     return `${(value / 1000).toFixed(1)}k €`;
+  } else if (value === 0) {
+    return `0 €`; // Cas spécial pour zéro
   } else {
-    return `${value} €`;
+    return `${value.toFixed(1)} €`;
   }
 };
 
@@ -180,6 +188,7 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
   const [showEvents, setShowEvents] = useState(true);
   const [hoveredEvent, setHoveredEvent] = useState(null);
   const chartRef = React.useRef(null);
+  const chartAreaRef = React.useRef(null); // Pour référencer uniquement la zone du graphique
   const [chartDimensions, setChartDimensions] = useState({ width: 0, height: 0 });
   const [eventPositions, setEventPositions] = useState([]);
   
@@ -208,25 +217,62 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
     return dataPoint;
   }) : [];
   
+  // Référence pour les éléments SVG du graphique
+  const getSvgElements = useCallback(() => {
+    if (!chartRef.current) return null;
+    
+    const chartContainer = chartRef.current;
+    const svgElements = chartContainer.querySelectorAll('svg');
+    if (svgElements.length === 0) return null;
+    
+    const mainSvg = svgElements[0];
+    const chartArea = mainSvg.querySelector('.recharts-cartesian-grid');
+    
+    if (!chartArea) return null;
+    
+    return { mainSvg, chartArea };
+  }, []);
+  
   // Déterminer les dimensions du graphique après montage
   useEffect(() => {
     if (chartRef.current) {
       const updateDimensions = () => {
         const chartElem = chartRef.current;
         if (chartElem) {
-          const { width, height } = chartElem.getBoundingClientRect();
-          setChartDimensions({ width, height });
+          const svgElements = getSvgElements();
+          if (svgElements) {
+            const { chartArea } = svgElements;
+            const chartAreaBounds = chartArea.getBoundingClientRect();
+            const chartElemBounds = chartElem.getBoundingClientRect();
+            
+            // Coordonnées de la zone du graphique relative au conteneur
+            const chartAreaX = chartAreaBounds.left - chartElemBounds.left;
+            const chartAreaY = chartAreaBounds.top - chartElemBounds.top;
+            
+            setChartDimensions({
+              width: chartAreaBounds.width,
+              height: chartAreaBounds.height,
+              x: chartAreaX,
+              y: chartAreaY,
+              right: chartAreaX + chartAreaBounds.width,
+              bottom: chartAreaY + chartAreaBounds.height,
+              containerWidth: chartElemBounds.width,
+              containerHeight: chartElemBounds.height
+            });
+          }
         }
       };
       
-      updateDimensions();
+      // Attendre que le graphique soit rendu
+      const timeoutId = setTimeout(updateDimensions, 300);
       window.addEventListener('resize', updateDimensions);
       
       return () => {
+        clearTimeout(timeoutId);
         window.removeEventListener('resize', updateDimensions);
       };
     }
-  }, [chartRef.current, performanceData]);
+  }, [chartRef.current, performanceData, getSvgElements, chartType]);
   
   // Calculer les positions des événements une fois que nous avons les dimensions
   useEffect(() => {
@@ -235,27 +281,19 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
     }
   }, [chartDimensions, chartData, showEvents]);
   
-  // Fonction pour calculer les positions des événements
+  // Fonction améliorée pour calculer les positions des événements
   const calculateEventPositions = () => {
-    if (!chartRef.current || chartData.length === 0) return;
+    if (!chartRef.current || chartData.length === 0 || !chartDimensions.x) return;
     
-    const { width, height } = chartDimensions;
+    const { width, height, x: chartX, y: chartY } = chartDimensions;
+    
+    // Obtenir les dates min/max du graphique
     const chartStart = new Date(chartData[0].date);
     const chartEnd = new Date(chartData[chartData.length - 1].date);
     const timeRange = chartEnd.getTime() - chartStart.getTime();
     
-    // Calculer la position verticale en fonction de la valeur du portefeuille
-    const yValues = chartData.map(dataPoint => {
-      let maxValue = 0;
-      selectedStocks.forEach(stock => {
-        if (dataPoint[stock.symbol] > maxValue) {
-          maxValue = dataPoint[stock.symbol];
-        }
-      });
-      return maxValue;
-    });
-    
-    const maxYValue = Math.max(...yValues);
+    // Marge de sécurité pour éviter que les événements ne sortent du graphique
+    const safetyMargin = 10;
     
     // Calculer les positions pour les événements du marché
     const positions = marketCrashes
@@ -263,46 +301,72 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
         const crashDate = new Date(crash.date);
         return crashDate >= chartStart && crashDate <= chartEnd;
       })
-      .map(crash => {
+      .map((crash, index) => {
         const crashDate = new Date(crash.date);
+        // Calculer la position horizontale proportionnelle
         const timePosition = (crashDate.getTime() - chartStart.getTime()) / timeRange;
-        let xPos = Math.max(10, Math.min(width - 10, timePosition * width));
         
-        // Trouver la date la plus proche dans les données
-        let closestIndex = 0;
-        let smallestDiff = Number.MAX_VALUE;
+        // Position X relative à la zone de graphique, avec marge de sécurité
+        const rawXPos = chartX + timePosition * width;
+        const xPos = Math.max(chartX + safetyMargin, Math.min(chartX + width - safetyMargin, rawXPos));
         
-        chartData.forEach((dataPoint, index) => {
-          const dataDate = new Date(dataPoint.date);
-          const diff = Math.abs(dataDate.getTime() - crashDate.getTime());
-          if (diff < smallestDiff) {
-            smallestDiff = diff;
-            closestIndex = index;
-          }
-        });
+        // Position Y en haut du graphique, avec un peu d'espace et un décalage pour éviter les chevauchements
+        const yPos = Math.max(safetyMargin, chartY + 20 + (index % 3) * 15);
         
-        // Obtenir la valeur Y à cette date
-        let yValue = 0;
-        if (closestIndex >= 0 && closestIndex < chartData.length) {
+        // Trouver la valeur de données pour cette date
+        const closestDataPoint = findClosestDataPoint(crashDate);
+        let yValuePos = chartY + height - safetyMargin; // Par défaut, en bas du graphique
+        
+        if (closestDataPoint) {
+          // Trouver la plus grande valeur pour cette date
+          let maxValue = 0;
           selectedStocks.forEach(stock => {
-            if (chartData[closestIndex][stock.symbol] > yValue) {
-              yValue = chartData[closestIndex][stock.symbol];
+            if (closestDataPoint[stock.symbol] > maxValue) {
+              maxValue = closestDataPoint[stock.symbol];
             }
           });
+          
+          // Domaine Y du graphique
+          const yDomain = getYDomain();
+          const yRange = yDomain[1] - yDomain[0];
+          
+          // Convertir cette valeur en position Y
+          const valueRatio = maxValue / yDomain[1];
+          yValuePos = chartY + height - (valueRatio * height);
         }
-        
-        // Calculer la position Y proportionnelle, en gardant une marge
-        const yPosition = Math.max(20, Math.min(height - 20, (1 - yValue / maxYValue) * height));
         
         return {
           ...crash,
           x: xPos,
-          y: yPosition,
-          value: yValue
+          y: yPos,
+          connectorX: xPos,
+          connectorY: yPos + 6, // Commence légèrement en dessous du marqueur
+          connectorHeight: Math.max(10, Math.min(yValuePos - yPos - 6, chartY + height - yPos - safetyMargin - 6)),
+          dataPoint: closestDataPoint
         };
       });
     
     setEventPositions(positions);
+  };
+  
+  // Fonction pour trouver le point de données le plus proche d'une date
+  const findClosestDataPoint = (targetDate) => {
+    if (!chartData || chartData.length === 0) return null;
+    
+    let closestPoint = null;
+    let minDiff = Infinity;
+    
+    chartData.forEach(point => {
+      const pointDate = new Date(point.date);
+      const diff = Math.abs(pointDate.getTime() - targetDate.getTime());
+      
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestPoint = point;
+      }
+    });
+    
+    return closestPoint;
   };
   
   // Déterminer le domaine Y pour un meilleur affichage
@@ -360,7 +424,8 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
           {chartType === 'area' ? (
             <AreaChart
               data={chartData}
-              margin={{ top: 20, right: 20, left: 0, bottom: 5 }}
+              margin={{ top: 30, right: 20, left: 60, bottom: 10 }}
+              ref={chartAreaRef}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
               <XAxis 
@@ -370,11 +435,13 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
                   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                 }}
                 stroke="#6c757d"
+                padding={{ left: 10, right: 10 }}
               />
               <YAxis 
                 tickFormatter={formatYAxisTick}
                 stroke="#6c757d"
                 domain={getYDomain()}
+                padding={{ top: 10, bottom: 0 }}
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend 
@@ -413,7 +480,8 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
           ) : (
             <LineChart
               data={chartData}
-              margin={{ top: 20, right: 20, left: 0, bottom: 5 }}
+              margin={{ top: 30, right: 20, left: 60, bottom: 10 }}
+              ref={chartAreaRef}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
               <XAxis 
@@ -423,11 +491,13 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
                   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                 }}
                 stroke="#6c757d"
+                padding={{ left: 10, right: 10 }}
               />
               <YAxis 
                 tickFormatter={formatYAxisTick}
                 stroke="#6c757d"
                 domain={getYDomain()}
+                padding={{ top: 10, bottom: 0 }}
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend 
@@ -466,21 +536,36 @@ const PerformanceChart = ({ performanceData, selectedStocks }) => {
           )}
         </ResponsiveContainer>
         
-        {/* Marqueurs d'événements interactifs */}
+        {/* Marqueurs d'événements avec lignes connectrices améliorées */}
         {showEvents && eventPositions.map((eventData, index) => (
           <React.Fragment key={`event-${index}`}>
+            {/* Ligne de connexion */}
+            <EventConnector
+              style={{
+                left: `${eventData.connectorX}px`,
+                top: `${eventData.connectorY}px`,
+                height: `${eventData.connectorHeight}px`
+              }}
+            />
+            
+            {/* Marqueur d'événement */}
             <EventMarker 
-              left={eventData.x}
-              top={eventData.y} 
+              style={{
+                left: `${eventData.x}px`,
+                top: `${eventData.y}px`
+              }}
               onMouseEnter={() => setHoveredEvent(eventData)}
               onMouseLeave={() => setHoveredEvent(null)}
             />
             
+            {/* Tooltip d'événement */}
             {hoveredEvent && hoveredEvent.date === eventData.date && (
               <EventTooltip
                 show={true}
-                left={eventData.x}
-                top={eventData.y}
+                style={{
+                  left: `${eventData.x}px`,
+                  top: `${eventData.y}px`
+                }}
               >
                 <strong>{eventData.name}</strong>
                 <div>{formatDate(eventData.date)}</div>
