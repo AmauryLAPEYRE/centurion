@@ -397,7 +397,7 @@ const PerformanceSummary = ({ performanceData, selectedStocks }) => {
             negative={totalROI < 0}
           >
             {totalROI > 0 ? <FaArrowUp /> : <FaArrowDown />}
-            {totalROI > 0 ? '+' : ''}{formatPercent(totalROI / 100)}
+            {totalROI > 0 ? '+' : ''}{formatPercent(totalROI)}
           </SummarySubValue>
         </SummaryCard>
         
@@ -481,7 +481,7 @@ const PerformanceSummary = ({ performanceData, selectedStocks }) => {
             negative={stat.roi < 0}
           >
             {stat.roi > 0 ? <FaArrowUp /> : <FaArrowDown />}
-            {stat.roi > 0 ? '+' : ''}{formatPercent(stat.roi / 100)}
+            {stat.roi > 0 ? '+' : ''}{formatPercent(stat.roi)}
           </SummarySubValue>
           
           <SummarySubValue style={{ marginTop: '5px' }}>

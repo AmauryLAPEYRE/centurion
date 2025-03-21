@@ -261,7 +261,7 @@ const PerformanceTable = ({ performanceData, selectedStocks, activeStockIndex })
                 <Td>
                   <Badge success={entry.roi > 0} danger={entry.roi < 0}>
                     {entry.roi > 0 ? <FaArrowUp /> : <FaArrowDown />}
-                    {formatPercent(entry.roi / 100)}
+                    {formatPercent(entry.roi)}
                   </Badge>
                 </Td>
               </tr>
