@@ -96,10 +96,7 @@ export const Header = styled.header`
     pointer-events: none;
   }
   
-  &:hover {
-    box-shadow: ${theme.shadows.lg};
-    transform: translateY(-2px);
-  }
+  /* Suppression de l'effet de zoom au survol */
   
   ${mediaQueries.mobile`
     padding: 20px 0;
@@ -147,10 +144,18 @@ export const Card = styled.div`
   position: relative;
   overflow: hidden;
   
+  /* Suppression des effets de hover inutiles */
+  /* Conserver l'effet d'ombrage mais supprimer le déplacement vertical pour réduire les distractions */
   &:hover {
-    box-shadow: ${theme.shadows.lg};
-    transform: translateY(-3px);
+    box-shadow: ${theme.shadows.md};
   }
+  
+  ${props => props.interactive && css`
+    &:hover {
+      box-shadow: ${theme.shadows.lg};
+      transform: translateY(-3px);
+    }
+  `}
   
   ${props => props.compact && css`
     padding: 20px;
@@ -300,6 +305,7 @@ export const Select = styled.select`
   }
 `;
 
+// Conserver les effets de hover sur les éléments interactifs comme les boutons
 export const Button = styled.button`
   background-color: ${props => 
     props.secondary ? theme.secondary :
@@ -389,6 +395,7 @@ export const FlexRow = styled.div`
   `}
 `;
 
+// Modifier l'effet de hover pour les éléments de la liste des stocks
 export const StockItem = styled.div`
   display: flex;
   align-items: center;
@@ -401,9 +408,9 @@ export const StockItem = styled.div`
   box-shadow: ${theme.shadows.sm};
   animation: ${fadeInLeft} 0.3s ease;
   
+  /* Conserver l'effet de hover mais le rendre plus subtil */
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: ${theme.shadows.md};
+    background-color: rgba(248, 249, 250, 0.8);
   }
 `;
 
@@ -461,6 +468,7 @@ export const SummaryCards = styled.div`
   `}
 `;
 
+// Modifier le comportement des cartes de résumé
 export const SummaryCard = styled.div`
   background-color: white;
   border-radius: ${theme.radius.md};
@@ -472,9 +480,9 @@ export const SummaryCard = styled.div`
   animation-delay: ${props => props.index * 0.1}s;
   animation-fill-mode: both;
   
+  /* Suppression de l'effet de déplacement au survol */
   &:hover {
-    transform: translateY(-3px);
-    box-shadow: ${theme.shadows.lg};
+    box-shadow: ${theme.shadows.md};
   }
   
   ${props => props.highlighted && css`
@@ -509,6 +517,7 @@ export const SummaryValue = styled.p`
   margin-bottom: 8px;
   transition: all 0.3s ease;
   
+  /* Comportement de hover conservé pour une meilleure lisibilité des valeurs */
   &:hover {
     color: ${theme.primary};
   }
@@ -551,6 +560,7 @@ export const TabsList = styled.div`
   }
 `;
 
+// Conserver les effets de hover sur les onglets qui sont interactifs
 export const Tab = styled.button`
   padding: 12px 20px;
   background-color: ${props => props.active ? 'white' : 'transparent'};
@@ -634,6 +644,7 @@ export const Th = styled.th`
   font-weight: 600;
   transition: ${theme.transitions.fast};
   
+  /* Effet de hover subtil pour indiquer la possibilité de tri */
   &:hover {
     background-color: rgba(67, 97, 238, 0.05);
   }
@@ -644,6 +655,7 @@ export const Td = styled.td`
   border-bottom: 1px solid ${theme.gray};
   transition: ${theme.transitions.fast};
   
+  /* Effet de hover sur la ligne conservé pour une meilleure lisibilité */
   tr:hover & {
     background-color: ${theme.light};
   }
